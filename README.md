@@ -176,11 +176,28 @@ Windows 下也可以直接**双击 `一键生成视频.bat`**。
 ├─ preview_drawing.py      # 工具：图纸元素还原核对图
 ├─ preview_traj.py         # 工具：轨迹 vs 样条控制点核对图
 ├─ photo_geo.json          # 底图配准参数（已标定好）
+├─ skill/                  # DSH skill 本体（见下）
 └─ 参考/
    ├─ CAD截图.png          # 用于像素级标定的参考截图
    ├─ 方向对比.png          # 正向 / 反向 对比
    └─ 成品预览.jpg
 ```
+
+## `skill/`：让 AI 按这套流程出片
+
+`skill/` 内含 `SKILL.md` + `scripts/{preflight_dxf.py, set_params.py}`，是可**整体安装**的 skill：
+
+```powershell
+Copy-Item -Recurse -Force "<本仓库>\skill\*" "$env:USERPROFILE\.dsh\skills\blade-truck-sim\"
+```
+
+安装后在 DSH 里说「生成叶片车模拟视频」，它会先**问 6 项**（图纸路径 / 梁长 / 叶片长 / 小机工距离 /
+皮卡距离 / 起始方向）、跑 `preflight_dxf.py` 预检、用 `set_params.py` 写参、验收合格再出片；
+并按本 README 的规则判定底图（有 OLE 贴航拍图，没有则以 CAD 图纸为准）。
+
+> `skill/scripts/` 与仓库根目录的 `preflight_dxf.py`、`set_params.py` 是**两份镜像**
+> （第 0、5 节的命令在项目目录里跑根目录那份），改了脚本记得两边同步。
+
 
 ---
 
