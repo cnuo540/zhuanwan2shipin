@@ -11,7 +11,7 @@ import os, json, math
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-BASE = r'D:\360MoveData\Users\86136\Documents\harness-xm'
+BASE = os.path.dirname(os.path.abspath(__file__))   # 可移植：跟着本文件走
 FFMPEG = (r'C:\Users\86136\AppData\Local\Microsoft\WinGet\Packages'
           r'\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe'
           r'\ffmpeg-8.1.1-full_build\bin\ffmpeg.exe')

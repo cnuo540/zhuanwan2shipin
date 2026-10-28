@@ -23,7 +23,12 @@ def main():
                         os.path.join(BASE, 'extract_ole_image.py'), dxf], cwd=BASE)
     emf = os.path.join(BASE, '_ole_image.emf')
     if not os.path.exists(emf) or os.path.getsize(emf) < 1024:
-        print('该图纸没有可提取的嵌入图片，跳过底图')
+        # 本图纸没有图片：清掉上一张残留，否则新图会贴上旧底图（出片以 CAD 图纸为准）
+        _stale = os.path.join(BASE, 'photo.png')
+        if os.path.exists(_stale):
+            os.remove(_stale)
+            print('已删除上一张图纸残留的 photo.png')
+        print('该图纸没有可提取的嵌入图片 -> 出片以 CAD 图纸自身图元为底图')
         return 0
 
     # 2) EMF → PNG（Windows GDI+）
@@ -48,7 +53,12 @@ Write-Output "$w x $h"
 ''' % (emf, png))
     r = subprocess.run(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ps1])
     if r.returncode != 0 or not os.path.exists(png):
-        print('!! EMF 转换失败：视频将不带航拍底图'); return 1
+        # 转换失败同样清掉残留，避免拿旧底图贴新图
+        _stale = os.path.join(BASE, 'photo.png')
+        if os.path.exists(_stale):
+            os.remove(_stale)
+        print('!! EMF 转换失败：已清理过期 photo.png，视频不带航拍底图（以 CAD 图纸为准）')
+        return 1
     print('底图已生成:', png)
     return 0
 

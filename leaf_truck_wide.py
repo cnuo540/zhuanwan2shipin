@@ -40,24 +40,19 @@ if L.HAS_PHOTO:
 pad = 14.0
 xmin, ymin = allp.min(axis=0) - pad
 xmax, ymax = allp.max(axis=0) + pad
-# ---- 区域划分（按内容宽高比排版，主图与放大窗紧凑居中）----
-if L.HAS_PHOTO:
-    MH = H - HEAD_H - 250                     # 主图可用高度（底部留 250 给信息条）
-    ISZ = 560                                 # 放大窗边长（装下整车队：车头→尾部→小机工→皮卡）
-    MSCALE = min((W - ISZ - 60.0) / (xmax - xmin), MH / (ymax - ymin))
-    MW = MSCALE * (xmax - xmin)               # 主图实际使用宽度
-    GAP = 28
-    OX = max(0.0, (W - (MW + GAP + ISZ)) / 2.0)
-    MX0, MY0 = int(OX), HEAD_H
-    IX0, IY0 = int(OX + MW + GAP), int(HEAD_H + (MH - ISZ) / 2.0)
-    GX0, GY0, GW, GH = 0, 0, 0, 0             # 数据面板已移除
-    BX0, BY0, BW, BH = 0, H - 250, W, 250
-else:
-    MX0, MY0, MW, MH = 0, HEAD_H, 860, H - HEAD_H
-    IX0, IY0, ISZ = 880, 96, 640
-    GX0, GY0, GW, GH = 1544, 96, 356, 640
-    BX0, BY0, BW, BH = 880, 760, 1020, 280
-    MSCALE = min(MW / (xmax - xmin), MH / (ymax - ymin))
+# ---- 区域划分（有/无航拍底图统一：主图+放大窗按内容宽高比居中，底部通栏）----
+# 有底图 -> 航拍照片贴在最下层；无底图 -> 以 CAD 图纸自身图元为底
+# （道路线/圆角/圆/文字），版式完全一致，不给已移除的数据面板留空洞
+MH = H - HEAD_H - 250                     # 主图可用高度（底部 250 给信息条）
+ISZ = 560                                 # 放大窗边长（装下整车队：车头→尾部→小机工→皮卡）
+MSCALE = min((W - ISZ - 60.0) / (xmax - xmin), MH / (ymax - ymin))
+MW = MSCALE * (xmax - xmin)               # 主图实际使用宽度
+GAP = 28
+OX = max(0.0, (W - (MW + GAP + ISZ)) / 2.0)
+MX0, MY0 = int(OX), HEAD_H
+IX0, IY0 = int(OX + MW + GAP), int(HEAD_H + (MH - ISZ) / 2.0)
+GX0, GY0, GW, GH = 0, 0, 0, 0             # 数据面板已移除
+BX0, BY0, BW, BH = 0, H - 250, W, 250
 
 MWORLD = ((xmin + xmax) / 2.0, (ymin + ymax) / 2.0)
 MAIN_V = L.make_view(MSCALE, (MW, MH), MWORLD, origin_px=(MX0, MY0))

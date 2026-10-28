@@ -49,7 +49,15 @@ def parse_pairs(rec):
 def extract_emf(dxf_path):
     rec = find_ole_record(dxf_path)
     if rec is None:
-        print('未找到 OLE2FRAME'); return None
+        # 本图纸没有 OLE：清掉上一张残留的 EMF，否则 make_photo 会拿旧图转出 photo.png，
+        # 导致"无底图的图纸"贴上别的图纸的航拍图（出片应以 CAD 图纸为准）
+        _emf = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_ole_image.emf')
+        if os.path.exists(_emf):
+            os.remove(_emf)
+            print('未找到 OLE2FRAME；已删除残留 _ole_image.emf（不沿用上一张图纸的底图）')
+        else:
+            print('未找到 OLE2FRAME')
+        return None
     pairs = parse_pairs(rec)
     blob = b''
     xdata = {}
