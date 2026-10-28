@@ -103,5 +103,5 @@ def extract_emf(dxf_path):
 
 
 if __name__ == '__main__':
-    dxf = sys.argv[1] if len(sys.argv) > 1 else os.path.join(BASE, '转翠竹路.dxf')
+    dxf = sys.argv[1] if len(sys.argv) > 1 else r'D:\电脑桌面勿删\CAD文件夹\转翠竹路.dxf'
     extract_emf(dxf)

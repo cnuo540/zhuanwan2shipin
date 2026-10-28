@@ -11,31 +11,10 @@ import os, json, math
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-
-
-def _find_ffmpeg():
-    """按优先级找 ffmpeg：环境变量 → PATH → 常见安装位置"""
-    import shutil, glob
-    env = os.environ.get('FFMPEG')
-    if env and os.path.exists(env):
-        return env
-    which = shutil.which('ffmpeg')
-    if which:
-        return which
-    pats = [
-        os.path.expandvars(r'%LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg*\**\bin\ffmpeg.exe'),
-        r'C:\ffmpeg\bin\ffmpeg.exe',
-        r'C:\Program Files\ffmpeg\bin\ffmpeg.exe',
-    ]
-    for pat in pats:
-        hits = glob.glob(pat, recursive=True)
-        if hits:
-            return hits[0]
-    return 'ffmpeg'          # 交给系统 PATH，找不到会在合成时报错
-
-
-FFMPEG = _find_ffmpeg()
+BASE = r'D:\360MoveData\Users\86136\Documents\harness-xm'
+FFMPEG = (r'C:\Users\86136\AppData\Local\Microsoft\WinGet\Packages'
+          r'\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe'
+          r'\ffmpeg-8.1.1-full_build\bin\ffmpeg.exe')
 
 FPS, DUR = 30, 16
 NFR = FPS * DUR
@@ -51,9 +30,11 @@ BLADE_ROOT, BLADE_TIP = 2.8, 0.9
 SPEED = 4.0                  # 车头沿青线行驶速度 m/s
 COUPLE_L = 58.0             # 挂车梁长（刚性约束：挂接点→车尾 = 58 m，挂车尾部被车头牵引沿绿线前进）
 
-# ---- 跟随皮卡（黄色，走在青色路线上，保持在挂车尾部后方 40 m） ----
+# ---- 跟随目标（走在青色路线上，距挂车尾部固定沿路距离） ----
 ESCORT_L, ESCORT_W = 5.4, 2.05   # 皮卡外形尺寸(m)
-ESCORT_GAP = 40.0                # 距挂车尾部（绿线端点）的沿路距离(m)
+ESCORT_GAP = 60.0                # 皮卡距挂车尾部（绿线端点）的沿路距离(m)
+WORKER_GAP = 50.0                # 小机工距挂车尾部的沿路距离(m)
+WORKER_H = 4.0                   # 小机工图标高度(m)（图纸里指挥手符号约 6.7m，取折中）
 
 # ---- 颜色（车头=青色线, 挂车尾部=绿色线） ----
 C_CAB_TRAJ = (0, 162, 208)      # 青色：车头（牵引车）轨迹
@@ -71,6 +52,8 @@ C_ESC = (245, 196, 26)
 C_ESC_EDGE = (128, 96, 0)
 C_ESC_GLASS = (206, 226, 240)
 C_HITCH = (214, 52, 52)
+C_WORKER = (208, 44, 34)         # 小机工（红色）
+C_WORKER_HEAD = (248, 222, 200)  # 头部浅色
 C_DARK = (24, 27, 33)
 # 图纸背景元素：道路边线 / 弧线（浅灰）、文字
 C_ROAD = (168, 176, 188)
@@ -83,14 +66,7 @@ def aci2rgb(n, default=(168, 176, 188)):
     return m.get(int(n), default)
 
 # ---------------- 轨迹 ----------------
-_TRAJ = os.path.join(BASE, '_traj.json')
-if not os.path.exists(_TRAJ):
-    raise SystemExit(
-        '未找到 _traj.json。请先运行一次提取：\n'
-        '    python -X utf8 make_videos.py --no-render\n'
-        '或直接跑全流程：\n'
-        '    python -X utf8 make_videos.py')
-_raw = json.load(open(_TRAJ, encoding='utf-8'))
+_raw = json.load(open(os.path.join(BASE, '_traj.json'), encoding='utf-8'))
 # CAD 单位为毫米 → 米
 cab = np.array(_raw['cab'], dtype=float) / 1000.0
 trl = np.array(_raw['trailer'], dtype=float) / 1000.0
@@ -398,21 +374,23 @@ def state(f):
 
     fold = (tang - ch + math.pi) % (2.0 * math.pi) - math.pi
 
-    # 跟随皮卡：走在青色路线上，位置 = 挂车尾部投影到青线的弧长 − 30 m
-    # 若青线前段不够长（弧长为负），沿起点切线向后外推，保证始终是"尾部后方 30 m"
+    # 跟随目标（皮卡 / 小机工）：走在青色路线上，位置 = 尾部投影到青线弧长 − gap
     s_tail_on_cab = arc_of_closest(cab, CS, p_t)
-    s_esc = s_tail_on_cab - ESCORT_GAP
-    # 不允许超过主车车尾（避免与牵引车重叠）
-    s_esc = min(s_esc, u * CL - CAB_L * 0.5 - 3.0)
-    if s_esc >= 0.0:
-        pk_p, pk_ch, pk_ci = sample(cab, CS, CL, s_esc / CL)
-    else:
-        # 起点外推：沿起点前进方向的反方向延伸
-        t0 = cab[1] - cab[0]
-        t0 = t0 / max(1e-9, float(np.linalg.norm(t0)))
-        pk_p = np.asarray(cab[0], dtype=float) + t0 * s_esc
-        pk_ch = float(math.atan2(t0[1], t0[0]))
-        pk_ci = 0
+    t0 = cab[1] - cab[0]
+    t0 = t0 / max(1e-9, float(np.linalg.norm(t0)))
+
+    def _follower(gap):
+        s = min(s_tail_on_cab - gap, u * CL - CAB_L * 0.5 - 3.0)
+        if s >= 0.0:
+            pp, pa, pi = sample(cab, CS, CL, s / CL)
+        else:                       # 起点外推：沿起点前进方向反向延伸
+            pp = np.asarray(cab[0], dtype=float) + t0 * s
+            pa = float(math.atan2(t0[1], t0[0]))
+            pi = 0
+        return pp, pa, pi, s
+
+    pk_p, pk_ch, pk_ci, s_esc = _follower(ESCORT_GAP)   # 黄色皮卡 50 m
+    wk_p, wk_ch, wk_ci, s_wk = _follower(WORKER_GAP)    # 红色小机工 45 m
 
     return dict(cp=cp, ch=ch, ci=ci, tp=p_t, ti=ti, hitch=hitch,
                 cab_c=cp, tang=tang, tlen=tlen, trl_c=(hitch + p_t) / 2.0,
@@ -421,6 +399,8 @@ def state(f):
                 dist=u * CL, tail_arc=TS[ti],
                 pk=pk_p, pk_deg=float(math.degrees(pk_ch)), pk_ci=pk_ci,
                 pk_dist=s_esc, gap=u * CL - s_esc,
+                wk=wk_p, wk_deg=float(math.degrees(wk_ch)), wk_ci=wk_ci,
+                wk_dist=s_wk,
                 pk_tail=float(np.linalg.norm(pk_p - p_t)),
                 tail_on_cab=s_tail_on_cab,
                 span=float(np.linalg.norm(np.asarray(cp) - np.asarray(pk_p))),
@@ -576,6 +556,34 @@ def paste_photo(img, view, clip=None):
     crop = _photo.crop(src)
     dest = crop.resize((max(1, int(vx1 - vx0)), max(1, int(vy1 - vy0))), Image.BILINEAR)
     img.paste(dest, (int(vx0), int(vy0)))
+
+
+def draw_worker(dr, view, p, label=None, label_font=None):
+    """红色小机工（约 1.8 m 高的人形图标）：头 + 躯干 + 双臂 + 双腿"""
+    sc = view[0]
+    q = vpx(view, [p])[0]
+    h = max(3.0, WORKER_H * sc)
+    hw = h * 0.20
+    bw = h * 0.24
+    aw = max(1, int(round(h * 0.10)))
+
+    # 腿
+    dr.line([q[0], q[1] - h * 0.42, q[0] - bw * 0.7, q[1]], fill=C_WORKER, width=aw)
+    dr.line([q[0], q[1] - h * 0.42, q[0] + bw * 0.7, q[1]], fill=C_WORKER, width=aw)
+    # 躯干
+    dr.line([q[0], q[1] - h * 0.42, q[0], q[1] - h * 0.74],
+            fill=C_WORKER, width=max(aw, int(round(h * 0.22))))
+    # 双臂（一侧举起示意指挥）
+    dr.line([q[0], q[1] - h * 0.62, q[0] - bw * 1.3, q[1] - h * 0.80], fill=C_WORKER, width=aw)
+    dr.line([q[0], q[1] - h * 0.62, q[0] + bw * 1.3, q[1] - h * 0.80], fill=C_WORKER, width=aw)
+    # 头
+    dr.ellipse([q[0] - hw, q[1] - h - hw, q[0] + hw, q[1] - h + hw],
+               fill=C_WORKER_HEAD, outline=C_WORKER, width=max(1, aw))
+    if label:
+        f = label_font or font(10)
+        tw = dr.textlength(label, font=f) if hasattr(dr, 'textlength') else len(label) * 6
+        # 画在图标左侧、垂直居中：皮卡标签在右侧，避免两个标签相撞
+        dr.text((q[0] - tw - 5, q[1] - h * 0.7), label, font=f, fill=C_WORKER)
 
 
 def draw_hitch(dr, view, p, r=5, color=C_HITCH):

@@ -1,0 +1,14 @@
+﻿__pycache__/
+*.pyc
+.DS_Store
+
+# 运行生成（首次运行会自动重建，不入库）
+_traj.json
+photo.png
+_ole_image.emf
+_emf2png.ps1
+frames3/
+frames_wide/
+
+# 若不想把成片入库，取消下一行注释
+# *.mp4

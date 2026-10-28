@@ -43,7 +43,7 @@ xmax, ymax = allp.max(axis=0) + pad
 # ---- 区域划分（按内容宽高比排版，主图与放大窗紧凑居中）----
 if L.HAS_PHOTO:
     MH = H - HEAD_H - 250                     # 主图可用高度（底部留 250 给信息条）
-    ISZ = 396                                 # 放大窗边长
+    ISZ = 560                                 # 放大窗边长（装下整车队：车头→尾部→小机工→皮卡）
     MSCALE = min((W - ISZ - 60.0) / (xmax - xmin), MH / (ymax - ymin))
     MW = MSCALE * (xmax - xmin)               # 主图实际使用宽度
     GAP = 28
@@ -63,7 +63,7 @@ MWORLD = ((xmin + xmax) / 2.0, (ymin + ymax) / 2.0)
 MAIN_V = L.make_view(MSCALE, (MW, MH), MWORLD, origin_px=(MX0, MY0))
 
 # 放大视图：视野需容纳 车头↔皮卡 整列车队（按全程最大间距定档）
-ISCALE = min(MSCALE * 2.6, ISZ / (L.SPAN_TRUCK_MAX * 1.25))
+ISCALE = min(MSCALE * 2.2, ISZ / (L.SPAN_MAX * 1.16))
 
 f11, f12, f13, f15, f17, f26 = (L.font(11), L.font(12), L.font(13),
                                 L.font(15), L.font(17, True), L.font(26, True))
@@ -151,20 +151,21 @@ for f in range(START_F, LOOP, STEP):
     # 跟随皮卡：同一青线，落后主车 ESCORT_GAP 米
     L.draw_pickup(dr, MAIN_V, st['pk'], np.radians(st['pk_deg']),
                   label='皮卡', label_font=f11)
+    L.draw_worker(dr, MAIN_V, st['wk'], label='小机工', label_font=f11)
 
     # 主图上标注放大区域
     rc = ISZ / ISCALE / 2.0
-    z0 = L.vpx(MAIN_V, [[st['inset_truck_c'][0] - rc, st['inset_truck_c'][1] - rc]])[0]
-    z1 = L.vpx(MAIN_V, [[st['inset_truck_c'][0] + rc, st['inset_truck_c'][1] + rc]])[0]
+    z0 = L.vpx(MAIN_V, [[st['inset_c'][0] - rc, st['inset_c'][1] - rc]])[0]
+    z1 = L.vpx(MAIN_V, [[st['inset_c'][0] + rc, st['inset_c'][1] + rc]])[0]
     dr.rectangle([z0[0], z0[1], z1[0], z1[1]], outline=(96, 166, 224), width=1)
 
     # ---- 局部放大视图 ----
     panel = Image.new('RGB', (ISZ, ISZ), (255, 255, 255))
     if L.HAS_PHOTO:
-        L.paste_photo(panel, L.make_view(ISCALE, (ISZ, ISZ), st['inset_truck_c']),
+        L.paste_photo(panel, L.make_view(ISCALE, (ISZ, ISZ), st['inset_c']),
                       clip=(0, 0, ISZ, ISZ))
     pdr = ImageDraw.Draw(panel)
-    IV = L.make_view(ISCALE, (ISZ, ISZ), st['inset_truck_c'])
+    IV = L.make_view(ISCALE, (ISZ, ISZ), st['inset_c'])
     # 放大视图内也画道路背景，保持局部上下文
     L.draw_drawing_elements(pdr, IV, show_roads=True, show_texts=True,
                             text_font=10, inset=(0, 0, ISZ, ISZ))
@@ -175,6 +176,7 @@ for f in range(START_F, LOOP, STEP):
     L.draw_vehicle(pdr, IV, st, alpha)
     L.draw_hitch(pdr, IV, st['hitch'], r=8)
     L.draw_pickup(pdr, IV, st['pk'], np.radians(st['pk_deg']))
+    L.draw_worker(pdr, IV, st['wk'])
     img.paste(panel, (IX0, IY0))
     dr.rectangle([IX0 - 1, IY0 - 1, IX0 + ISZ, IY0 + ISZ], outline=(150, 156, 168), width=2)
     dr.rectangle([IX0, IY0, IX0 + 250, IY0 + 28], fill=(38, 42, 50))
@@ -202,7 +204,8 @@ for f in range(START_F, LOOP, STEP):
              ('box', L.C_CAB, '牵引车'),
              ('box', L.C_TRL, '挂车梁'),
              ('box', L.C_BLADE, '叶片货物'),
-             ('box', L.C_ESC, '跟随皮卡')]
+             ('box', L.C_ESC, '跟随皮卡'),
+             ('box', L.C_WORKER, '小机工')]
     for kind, col, txt in items:
         if kind == 'line':
             dr.line([lx, ly + 7, lx + 22, ly + 7], fill=col, width=4)

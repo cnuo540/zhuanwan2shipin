@@ -25,15 +25,17 @@ HEAD_H = 92                     # 顶部两行
 FOOT_H = 42                     # 底部信息条
 LEG_H = 40                      # 底部图例条
 
-# ---- 车辆参数(米) ----
-CAB_L, CAB_W = 8.0, 2.6
-HITCH_OFF = 1.2
-TRL_W = 3.6                  # 挂车梁宽度（比叶片宽，能露出车体边缘）
-BLADE_L = 81.0               # 叶片长度
-BLADE_ROOT, BLADE_TIP = 2.8, 0.9   # 叶片根部/尖端宽度
-
 # ---------------- 轨迹与车辆模型（统一使用 leaf_common） ----------------
 import leaf_common as LC
+
+# 车辆尺寸**只**来自 leaf_common，避免两处参数漂移
+# （此前这里复制了一份 BLADE_L=81，而核心已改成 108，导致竖版叶片一直画成 81 m）
+CAB_L, CAB_W = LC.CAB_L, LC.CAB_W
+HITCH_OFF = LC.HITCH_OFF
+TRL_W = LC.TRL_W
+BLADE_L = LC.BLADE_L
+BLADE_ROOT, BLADE_TIP = LC.BLADE_ROOT, LC.BLADE_TIP
+
 cab, trl = LC.cab, LC.trl
 CL, TL = LC.CL, LC.TL
 
@@ -195,7 +197,8 @@ items = [('line', (0, 162, 208), '车头轨迹（CAD 青线）'),
          ('box', (234, 130, 44), '牵引车'),
          ('box', (132, 100, 210), '挂车梁'),
          ('box', (252, 198, 74), '叶片货物'),
-         ('box', (245, 196, 26), '跟随皮卡（距尾部 40m）')]
+         ('box', (245, 196, 26), '跟随皮卡'),
+         ('box', (208, 44, 34), '小机工')]
 for kind, col, txt in items:
     if kind == 'line':
         d.line([lx, ly + 6, lx + 22, ly + 6], fill=col, width=4)
@@ -264,6 +267,7 @@ for f in range(START_F, LOOP, STEP):
     # 跟随皮卡（黄色，同一青线，落后主车 ESCORT_GAP 米）
     LC.draw_pickup(dr, MAIN, st['pk'], math.radians(st['pk_deg']),
                    label='皮卡', label_font=F11)
+    LC.draw_worker(dr, MAIN, st['wk'], label='小机工', label_font=F11)
 
     # ---------- 局部放大窗口 ----------
     ix, iy = W - MARGIN - INSET, PLOT_BOT - INSET - 8
@@ -297,6 +301,7 @@ for f in range(START_F, LOOP, STEP):
     pdr.ellipse([hq[0] - 7, hq[1] - 7, hq[0] + 7, hq[1] + 7], fill=(214, 52, 52), outline=(255, 255, 255))
     # 放大窗口内也画跟随皮卡（超出视野时 PIL 自动裁掉）
     LC.draw_pickup(pdr, IVIEW, st['pk'], math.radians(st['pk_deg']))
+    LC.draw_worker(pdr, IVIEW, st['wk'])
     # 窗口边框 + 标注
     img.paste(panel, (ix, iy))
     dr.rectangle([ix, iy, ix + INSET - 1, iy + INSET - 1], outline=(150, 156, 168), width=2)
