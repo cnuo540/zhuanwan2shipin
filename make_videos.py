@@ -65,7 +65,8 @@ def main():
     print()
     print('=' * 62)
     print('完成：')
-    for f in ('叶片车行走模拟.mp4', '叶片车行走模拟_横版.mp4'):
+    stem = os.path.splitext(os.path.basename(a.dxf))[0]
+    for f in (stem + '.mp4', stem + '_横版.mp4'):
         p = os.path.join(BASE, f)
         if os.path.exists(p):
             print('  %-26s %5.2f MB' % (f, os.path.getsize(p) / 1048576.0))

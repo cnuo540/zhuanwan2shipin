@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw
 
 import leaf_common as L
 
-OUT_MP4 = os.path.join(L.BASE, '叶片车行走模拟_横版.mp4')
+OUT_MP4 = os.path.join(L.BASE, L.DXF_NAME + '_横版.mp4')
 FRAMES_DIR = os.path.join(L.BASE, 'frames_wide')
 
 W, H = 1920, 1080

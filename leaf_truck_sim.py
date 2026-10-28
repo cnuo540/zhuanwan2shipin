@@ -12,7 +12,6 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-OUT_MP4 = os.path.join(BASE, '叶片车行走模拟.mp4')
 FRAMES_DIR = os.path.join(BASE, 'frames3')
 FFMPEG = (r'C:\Users\86136\AppData\Local\Microsoft\WinGet\Packages'
           r'\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe'
@@ -38,6 +37,7 @@ BLADE_ROOT, BLADE_TIP = LC.BLADE_ROOT, LC.BLADE_TIP
 
 cab, trl = LC.cab, LC.trl
 CL, TL = LC.CL, LC.TL
+OUT_MP4 = os.path.join(BASE, LC.DXF_NAME + '.mp4')
 
 # ---------------- 画布 ----------------
 allp = np.vstack([cab, trl])

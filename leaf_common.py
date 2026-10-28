@@ -117,6 +117,11 @@ PHOTO_TOP_IS_NORTH = bool(MIRROR_Y)
 def arc(p):
     return np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(p, axis=0), axis=1))])
 
+# 来源图纸名 → 输出视频名（例：转翠竹路.dxf → 转翠竹路.mp4 / 转翠竹路_横版.mp4）
+DXF_SRC = _raw.get('src', '')
+DXF_NAME = (os.path.splitext(os.path.basename(DXF_SRC))[0] if DXF_SRC
+            else '叶片车行走模拟')
+
 CS, TS = arc(cab), arc(trl)
 CL, TL = float(CS[-1]), float(TS[-1])
 

@@ -80,6 +80,7 @@ if __name__ == '__main__':
         print('错误: 未找齐两条轨迹，请确认颜色号')
         sys.exit(2)
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_traj.json')
+    data['src'] = os.path.abspath(dxf)      # 记录来源，输出视频按此名命名
     with open(out, 'w', encoding='utf-8') as f:
         json.dump(data, f)
     print('已保存:', out)
