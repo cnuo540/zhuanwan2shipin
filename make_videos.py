@@ -10,7 +10,7 @@
 import os, sys, subprocess, argparse
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_DXF = r'D:\电脑桌面勿删\CAD文件夹\转翠竹路.dxf'
+DEFAULT_DXF = os.path.join(os.path.dirname(os.path.abspath(__file__)), "转翠竹路.dxf")
 CAB_ACI, TRL_ACI = '4', '3'   # 青=车头, 绿=挂车尾部
 
 # 本工程默认行驶方向：False=正向(东→西,左转向南)  True=反向(南→北,右转向东)

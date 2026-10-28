@@ -195,6 +195,7 @@ python -X utf8 make_videos.py --dxf "D:\...\新图纸.dxf"
 ```
 叶片车转弯模拟/
 ├─ 转翠竹路.dxf            # 源图纸（含航拍底图 OLE）
+├─ 发展大道转琼海路.dxf    # 第二张图纸（无 OLE → 以 CAD 图纸为准）
 ├─ 一键生成视频.bat         # 双击运行
 ├─ make_videos.py          # 一键流水线（6 步）+ 方向开关
 ├─ leaf_common.py          # 核心：参数 / 物理模型 / 绘图 / 底图贴图
